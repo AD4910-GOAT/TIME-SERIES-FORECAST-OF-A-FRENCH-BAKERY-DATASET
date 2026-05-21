@@ -1,0 +1,24 @@
+small_df = df[df["unique_id"].isin(unique_ids)]
+
+models=(
+    SeasonalNaive(season_length=7),
+    AutoARIMA(seasonal=False,alias="ARIMA"),
+    AutoARIMA(season_length=7,alias="SARIMA")
+)
+
+sf = StatsForecast(models=models,freq="D")
+cv_df = sf.cross_validation(
+    h=horizon,
+    df=small_df, 
+    n_windows=8,
+    step_size=horizon,
+    refit=True
+)
+cv_df.head()
+
+	unique_id	ds	cutoff	y	SeasonalNaive	ARIMA	SARIMA
+0	BAGUETTE	2022-08-06	2022-08-05	55.0	68.0	71.362604	71.511528
+1	BAGUETTE	2022-08-07	2022-08-05	67.0	70.0	70.357892	78.458054
+2	BAGUETTE	2022-08-08	2022-08-05	61.0	48.0	61.200004	57.062745
+3	BAGUETTE	2022-08-09	2022-08-05	52.0	49.0	52.644621	49.525901
+4	BAGUETTE	2022-08-10	2022-08-05	57.0	57.0	47.770610	49.485683
