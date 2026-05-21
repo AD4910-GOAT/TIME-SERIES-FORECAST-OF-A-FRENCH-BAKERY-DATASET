@@ -1,0 +1,54 @@
+#PRE REQUISITES 
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from utilsforecast.plotting import plot_series
+from utilsforecast.evaluation import evaluate
+from utilsforecast.losses import *
+
+import warnings
+warnings.filterwarnings("ignore")
+
+
+
+
+
+
+#LOAD THE DATA
+df = pd.read_csv("daily_sales_french_bakery.csv", parse_dates = ["ds"])   
+df.groupby('unique_id').filter(lambda x: len(x)>=28)
+df = df.drop(["unit_price"], axis = 1 )
+df.head()
+#BASELINE MODELS
+
+from statsforecast import models    #Base Model
+horizon = 7
+models = [
+    Naive(),
+    HistoricAverage(),
+    WindowAverage(window_size=7),
+    SeasonalNaive(season_length=7)
+]
+
+sf = StatsForecast(models=models,freq='D')
+sf.fit(df=df)
+preds = sf.predict(h=horizon)
+
+
+unique_id	ds	Naive	HistoricAverage	WindowAverage	SeasonalNaive
+0	12 MACARON	2022-09-29	10.0	8.974359	2.857143	0.0
+1	12 MACARON	2022-09-30	10.0	8.974359	2.857143	0.0
+2	12 MACARON	2022-10-01	10.0	8.974359	2.857143	10.0
+3	12 MACARON	2022-10-02	10.0	8.974359	2.857143	0.0
+4	12 MACARON	2022-10-03	10.0	8.974359	2.857143	0.0
+
+
+#PLOTTING
+plot_series(
+    df=df,
+    forecasts_df=preds,
+    ids=['BAGUETTE','CROISSANT'],
+    max_insample_length=28,
+    palette='viridis')
