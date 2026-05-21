@@ -1,0 +1,55 @@
+#PRE Imports
+import pandas as pd
+from statsforecast import StatsForecast
+from statsforecast.models import AutoARIMA
+from utilsforecast.evaluation import evaluate
+from utilsforecast.losses import mae
+
+#ARIMA AND SARIMA MODEL TRAINING
+horizon = 7
+train = df[df['ds'] < df['ds'].max() - pd.Timedelta(days=horizon)]
+test  = df[df['ds'] >= df['ds'].max() - pd.Timedelta(days=horizon)]
+
+eval_df = test[['unique_id', 'ds', 'y']]
+
+
+unique_ids= ["BAGUETTE", "CROISSANT"]
+
+
+small_train = train[train['unique_id'].isin(unique_ids)]
+small_test = test[test['unique_id'].isin(unique_ids)]
+
+models = [
+    AutoARIMA(seasonal=False,alias="ARIMA"),
+    AutoARIMA(season_length=7,alias="SARIMA"),
+]
+
+X_df = (
+    small_test[['unique_id', 'ds', 'unit_price']]
+    .groupby('unique_id')
+    .head(horizon)          # keep only the first `horizon` rows per series
+    .reset_index(drop=True)
+)
+
+print(X_df.shape)           # should print (14, 3)  i.e. horizon × n_series
+print(X_df)
+
+
+sf = StatsForecast(models=models,freq="D")
+sf.fit(df = small_train) 
+arima_preds = sf.predict(h=horizon,X_df=X_df)
+
+arima_eval_df = pd.merge(arima_preds,eval_df,'inner',['ds','unique_id'])
+
+arima_eval = evaluate(
+    arima_eval_df,
+    metrics=[mae],
+
+)
+
+	unique_id	metric	ARIMA	SARIMA
+0	BAGUETTE	mae	8.575079	9.002095
+1	CROISSANT	mae	13.478040	11.197015
+
+
+arima_eval
